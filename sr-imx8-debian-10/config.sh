@@ -31,3 +31,14 @@ allow-hotplug eth0
 iface eth0 inet dhcp
 iface eth0 inet6 auto
 EOF
+
+# populate cnf db
+apt-file update && update-command-not-found
+
+# configure bootargs
+sed -E -i "s;^LINUX_KERNEL_CMDLINE=.*$;LINUX_KERNEL_CMDLINE=\"log_level=7 net.ifnames=0\";g" "$buildroot/etc/default/flash-kernel"
+
+# install boot-script and DTBs
+env FK_MACHINE="SolidRun i.MX8MM HummingBoard Pulse" flash-kernel
+env FK_MACHINE="SolidRun i.MX8MP HummingBoard Pulse" flash-kernel
+env FK_MACHINE="SolidRun i.MX8MQ HummingBoard Pulse" flash-kernel
