@@ -1,16 +1,14 @@
 # SolidRun System Image Builder
 
+## Install runtime dependencies
+
+    apt-get install debootstrap kpartx libxml2-dev libxslt1-dev python3-pip python3-venv qemu-utils rsync zlib1g-dev
+    python3 -m venv --prompt kiwi .venv
+    source .venv/bin/activate
+    pip3 install wheel
+    pip3 install git+git://github.com/Josua-SR/kiwi.git@mine
+
 ## Build Image
 
-Usage:
-
-    kiwi-ng system build \
-    	--description <path-to-description> \
-    	--target-dir=<path-to-workspace> \
-    	--signing-key=$DESCRIPTION/deb_10_release.key \
-    	[...]
-
-Examples:
-- i.MX8 Debian 10
-
-       kiwi-ng system build --description sr-imx8-debian-10 --target-dir=/tmp/my-image --signing-key=sr-imx8-debian-10/deb_10_release.key --signing-key=sr-imx8-debian-10/bsp_any.key --signing-key=sr-imx8-debian-10/bsp_imx8v2.key
+    sudo mkdir -p /root/.gnupg
+    sudo .venv/bin/python3 ./build.py
