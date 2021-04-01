@@ -112,7 +112,7 @@ def PrepareBlobSection(source, offset):
 	# wrap into object
 	return BlobSection(path=source, offset=offset)
 
-def PrepareKiwiRootfsSection(descdir, destdir):
+def PrepareKiwiRootfsSection(descdir, destdir, offset=None):
 	# initialize state
 	state = XMLState(XMLDescription(descdir + '/config.xml').load())
 
@@ -138,11 +138,11 @@ def PrepareKiwiRootfsSection(descdir, destdir):
 	del setup
 	del system
 
-	return KiwiRootfsSection(path=destdir, state=state)
+	return KiwiRootfsSection(path=destdir, state=state, offset=offset)
 
 def PrepareSection(args, destdir):
 	name = args["@name"]
-	offset = args["@offset"]
+	offset = int(args["@offset"])
 	type = args["@type"]
 
 	print(f'Building section \"{ name }\"')
@@ -158,7 +158,7 @@ def PrepareSection(args, destdir):
 	if type == "blob":
 		return PrepareBlobSection(source=args["@source"], offset=offset)
 	elif type == "rootfs":
-		return PrepareKiwiRootfsSection(descdir=args["@source"], destdir=f'{destdir}/{name}')
+		return PrepareKiwiRootfsSection(descdir=args["@source"], destdir=f'{destdir}/{name}', offset=offset)
 	else:
 		print(f'encountered invalid section type \"{ type }\"')
 		return None
@@ -189,10 +189,22 @@ class KiwiDiskImage:
 			return False
 
 	def AddPartitionTable(self):
-		self._disk = Disk(table_type='msdos', storage_provider=self._lodev, start_sector=16384)
+		self._disk = Disk(table_type='msdos', storage_provider=self._lodev, start_sector=None)
 		return True
 
 	def AddRootfs(self, path, fstype='ext4', offset=None):
+		sector_offset = None
+		if not offset is None:
+			if (offset % 512) != 0:
+				print(f'given rootfs offset { offset } is not multiple of 512!')
+				return False
+			sector_offset = int(offset / 512)
+
+		# kiwi does not directly allow manipulating partition offset directly
+		# this setting only works for the initial gap to the first partition ...
+		# also, this call relies on implementation details!
+		self._disk.partitioner.start_sector = sector_offset
+
 		self._disk.create_root_partition(mbsize='all_free')
 		self._disk.map_partitions()
 		system = FileSystem.new(name=fstype, device_provider=self._disk.get_device()['root'], root_dir=f'{ path }/', custom_args=None)
